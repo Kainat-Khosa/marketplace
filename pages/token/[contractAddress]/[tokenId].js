@@ -352,36 +352,38 @@ import {
     )
   }
   
-  export const getStaticProps = async context => {
-    const tokenId = context.params?.tokenId
-  
-    const sdk = new ThirdwebSDK(NETWORK)
-  
-    const contract = await sdk.getContract(NFT_COLLECTION_ADDRESS)
-  
-    const nft = await contract.erc721.get(tokenId)
-  
-    let contractMetadata
-  
-    try {
-      contractMetadata = await contract.metadata.get()
-    } catch (e) {}
-  
-    return {
-      props: {
-        nft,
-        contractMetadata: contractMetadata || null
-      },
-      revalidate: 1 // https://nextjs.org/docs/basic-features/data-fetching/incremental-static-regeneration
-    }
+export const getStaticProps = async context => {
+  const desiredTokenId = context.params?.tokenId;
+
+  const sdk = new ThirdwebSDK(NETWORK);
+
+  const contract = await sdk.getContract(NFT_COLLECTION_ADDRESS); // Change to your ERC1155 contract address
+
+  const nfts = await contract.erc1155.getAll(); // Fetch all NFTs
+
+  const filteredNfts = nfts.filter(nft => nft.metadata.id === desiredTokenId); // Filter NFTs with the same tokenId
+
+  let contractMetadata;
+
+  try {
+    contractMetadata = await contract.metadata.get();
+  } catch (e) {}
+
+  return {
+    props: {
+      nfts: filteredNfts,  // Return filtered NFTs instead of single NFT
+      contractMetadata: contractMetadata || null,
+    },
+    revalidate: 1
   }
+}
   
   export const getStaticPaths = async () => {
     const sdk = new ThirdwebSDK(NETWORK)
   
     const contract = await sdk.getContract(NFT_COLLECTION_ADDRESS)
   
-    const nfts = await contract.erc721.getAll()
+    const nfts = await contract.erc1155.getAll()
   
     const paths = nfts.map(nft => {
       return {
